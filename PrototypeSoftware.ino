@@ -22,7 +22,6 @@ void setup() {
 
   //Calculate LED step
   ledStep = POT_MAX_VALUE / RING_NUM_LEDS;
-  Serial.begin(9600);
 }
 
 
@@ -45,6 +44,5 @@ void loop() {
   {
     rgbRing.setPixelColor(i,  255, 80, 0);
   }
-  Serial.println(ledsEnabled);
   rgbRing.show();
 }
