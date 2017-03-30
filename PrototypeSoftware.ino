@@ -1,7 +1,13 @@
 //NeoPixel Library
 #include <Adafruit_NeoPixel.h>
+#include "BluefruitConfig.h"
+#include <Arduino.h>
+#include <SPI.h>
+#include <SoftwareSerial.h>
 
-
+#include "Adafruit_BLE.h"
+#include "Adafruit_BluefruitLE_SPI.h"
+#include "Adafruit_BluefruitLE_UART.h"
 //Constants
 #define RING_PIN 6
 #define RING_BRIGHTNESS 20
@@ -11,6 +17,7 @@
 #define POT_MAX_VALUE 1023
 
 Adafruit_NeoPixel rgbRing = Adafruit_NeoPixel(60, RING_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 int potValue = 0;
 unsigned int ledStep = 0;
 unsigned int ledsEnabled = 0;
@@ -22,6 +29,8 @@ void setup() {
 
   //Calculate LED step
   ledStep = POT_MAX_VALUE / RING_NUM_LEDS;
+  
+  ble.begin();
 }
 
 
@@ -31,7 +40,11 @@ void loop() {
 
   //Calculated the number of pixels that need to be enabled or disabled
   ledsEnabled = (potValue / ledStep);
-
+  ble.print("AT+BLEUARTTX=");
+  String snd = String(potValue);
+  snd += "                                   ";
+   ble.println(snd);
+  
 
   //Clear all
   for(unsigned int i = 0; i < RING_NUM_LEDS; i++)
