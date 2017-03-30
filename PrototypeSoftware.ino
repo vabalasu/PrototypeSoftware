@@ -34,17 +34,20 @@ void setup() {
 }
 
 
-
+unsigned bled = 0;
 void loop() {
   potValue = analogRead(POT_PIN);
-
+  
   //Calculated the number of pixels that need to be enabled or disabled
   ledsEnabled = (potValue / ledStep);
+  bled++;
+  if(bled > 100){
   ble.print("AT+BLEUARTTX=");
   String snd = String(potValue);
-  snd += "                                   ";
+  snd+= "    ";
    ble.println(snd);
-  
+   bled = 0;
+}
 
   //Clear all
   for(unsigned int i = 0; i < RING_NUM_LEDS; i++)
