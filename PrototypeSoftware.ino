@@ -58,7 +58,14 @@ void loop() {
   //Set Colors
   for(unsigned int i = 0; i < ledsEnabled; i++)
   {
+    if(ledsEnabled > 6 && ledsEnabled < 9)
+    {
+      rgbRing.setPixelColor(i,  0, 255, 0);
+    }
+    else
+    {
     rgbRing.setPixelColor(i,  255, 80, 0);
+    }
   }
   rgbRing.show();
 }
