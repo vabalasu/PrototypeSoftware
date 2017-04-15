@@ -29,43 +29,44 @@ void setup() {
 
   //Calculate LED step
   ledStep = POT_MAX_VALUE / RING_NUM_LEDS;
-  
+
   ble.begin();
+  Serial.begin(9600);
 }
 
-
+unsigned ledsNeedEnable;
 unsigned bled = 0;
 void loop() {
   potValue = analogRead(POT_PIN);
-  
+
   //Calculated the number of pixels that need to be enabled or disabled
-  ledsEnabled = (potValue / ledStep);
+  ledsNeedEnable = (potValue / ledStep);
+  int delta = ledsNeedEnable - ledsEnabled;
+  if(delta > 0)
+  {
+    for(unsigned int i = ledsEnabled; i < ledsNeedEnable; i++)
+    {
+      rgbRing.setPixelColor(i, 255, 80, 0);
+    }
+    rgbRing.show();
+  }
+  else if(delta < 0)
+  {
+    for(unsigned int i = ledsEnabled; i > ledsNeedEnabled; i--)
+    {
+      rgbRing.setPixelColor(i, 0, 0, 0 );
+    }
+    rgbRing.show();
+  }
+  ledsEnabled = ledsNeedEnable;
   bled++;
-  if(bled > 100){
-  ble.print("AT+BLEUARTTX=");
-  String snd = String(potValue);
-  snd+= "    ";
-   ble.println(snd);
-   bled = 0;
-}
-
-  //Clear all
-  for(unsigned int i = 0; i < RING_NUM_LEDS; i++)
-  {
-    rgbRing.setPixelColor(i, 0, 0, 0);
+  if (bled > 100) {
+    ble.print("AT+BLEUARTTX=");
+    String snd = String(potValue);
+    snd += "    ";
+    ble.println(snd);
+    bled = 0;
   }
 
-  //Set Colors
-  for(unsigned int i = 0; i < ledsEnabled; i++)
-  {
-    if(ledsEnabled > 6 && ledsEnabled < 9)
-    {
-      rgbRing.setPixelColor(i,  0, 255, 0);
-    }
-    else
-    {
-    rgbRing.setPixelColor(i,  255, 80, 0);
-    }
-  }
-  rgbRing.show();
+
 }
