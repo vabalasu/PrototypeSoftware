@@ -18,6 +18,8 @@
 
 Adafruit_NeoPixel rgbRing = Adafruit_NeoPixel(60, RING_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+
+
 int potValue = 0;
 unsigned int ledStep = 0;
 unsigned int ledsEnabled = 0;
@@ -34,30 +36,85 @@ void setup() {
   Serial.begin(9600);
 }
 
+bool usingGreen = false;
+bool colorChanged = false;
 unsigned ledsNeedEnable;
 unsigned bled = 0;
 void loop() {
   potValue = analogRead(POT_PIN);
-
+  
   //Calculated the number of pixels that need to be enabled or disabled
   ledsNeedEnable = (potValue / ledStep);
   int delta = ledsNeedEnable - ledsEnabled;
+  if(usingGreen)
+  {
+    if(potValue < 600 || potValue > 800)
+    {
+      usingGreen = false;
+      colorChanged = true;
+    }
+    else
+    {
+      colorChanged = false;
+    }
+  }
+  else
+  {
+    if(potValue > 620 && potValue < 780)
+    {
+      usingGreen = true;
+      colorChanged = true;
+    }
+    else
+    {
+      colorChanged = false;
+    }
+  }
+  if(colorChanged)
+  {
+    for(unsigned int i = 0; i < RING_NUM_LEDS; i++)
+    {
+      rgbRing.setPixelColor(i, 0, 0, 0);
+    }
+    for(unsigned int i = 0; i < ledsNeedEnable; i++)
+    {
+       if(usingGreen)
+      {
+      rgbRing.setPixelColor(i, 0, 255, 0);
+      }
+      else
+      {
+        rgbRing.setPixelColor(i, 255, 80, 0);
+      }
+    }
+  }
+  else
+  {
   if(delta > 0)
   {
     for(unsigned int i = ledsEnabled; i < ledsNeedEnable; i++)
     {
-      rgbRing.setPixelColor(i, 255, 80, 0);
+      if(usingGreen)
+      {
+      rgbRing.setPixelColor(i, 0, 255, 0);
+      }
+      else
+      {
+        rgbRing.setPixelColor(i, 255, 80, 0);
+      }
     }
     rgbRing.show();
   }
   else if(delta < 0)
   {
-    for(unsigned int i = ledsEnabled; i > ledsNeedEnabled; i--)
+    for(unsigned int i = ledsEnabled; i > ledsNeedEnable; i--)
     {
       rgbRing.setPixelColor(i, 0, 0, 0 );
     }
     rgbRing.show();
   }
+  }
+
   ledsEnabled = ledsNeedEnable;
   bled++;
   if (bled > 100) {
