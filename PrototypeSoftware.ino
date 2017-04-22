@@ -74,16 +74,21 @@ void loop() {
 
   ledRing.updateRing(potValue);
 
-  String valuesString =
-    String(batteryVoltage,2)
-    + " " + String(potValue)
-    + " " + String(pressure,2)
-    + " " + String(temperature,2);
   if (Serial)
-    Serial.println("Battery (V), Potentiometer, Pressure (Pa), Temperature (C): " + valuesString);
+  {
+    Serial.println("Battery (V), Potentiometer, Pressure (Pa), Temperature (C): "
+    + String(batteryVoltage,2)
+    + "," + String(temperature,2)
+    + "," + String(potValue)
+    + "," + String(pressure,2));
+  }
 
   if (ble.isConnected())
-    ble.println(valuesString);
+  {
+    ble.println(String(temperature,2)
+    + "," + String(potValue)
+    + "," + String(pressure,2));
+  }
 
   //Delay between cycles in ms
   delay(200);
