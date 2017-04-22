@@ -1,11 +1,13 @@
 #include "LedRing.h"
 
-LedRing::setup()
+LedRing::setup(int pin)
 {
-  ring = new Adafruit_NeoPixel(60, RingPin, NEO_GRB + NEO_KHZ800);
+  ring = new Adafruit_NeoPixel(60, pin, NEO_GRB + NEO_KHZ800);
 
   ring->begin();
   ring->setBrightness(Brightness);
+
+  lastValue = 0;
 }
 
 void LedRing::setInputRange(float lower, float upper)
@@ -23,10 +25,8 @@ void LedRing::setTargetRange(float lower, float upper)
 void LedRing::updateRing(float value)
 {
   // First, clip value to allowable input range
-  if (value < lowerInput)
-    value = lowerInput;
-  else if (value > upperInput)
-    value = upperInput;
+  value = max(value, lowerInput);
+  value = min(value, upperInput);
 
   int numberToLight = valueToIndex(value);
 
@@ -38,7 +38,9 @@ void LedRing::updateRing(float value)
   int lowerTargetIndex = valueToIndex(lowerTarget);
   int upperTargetIndex = valueToIndex(upperTarget);
 
-  for (int i = 0; i < numberToLight; i++)
+  // I can't tell if there is flicker or not. Just in case, only touch lights
+  // whose state needs to be changed.
+  for (int i = lastValue; i < numberToLight; i++)
   {
     uint32_t color = green;
     if (i < lowerTargetIndex || i > upperTargetIndex)
@@ -60,5 +62,3 @@ int LedRing::valueToIndex(float value)
   return (int)((value - lowerInput) / (upperInput - lowerInput) * NumberOfLeds + 0.5);
 }
 
-
-LedRing ledRing;

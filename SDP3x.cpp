@@ -2,6 +2,11 @@
 #include <Wire.h>
 #include "SDP3x.h"
 
+void SDP3x::setup(int i2cAddress)
+{
+  I2cAddress = i2cAddress;
+}
+
 float SDP3x::convertPressure(uint16_t ticks)
 {
   // Pressure scale factor for SDP31 is 60 ticks/Pascal
@@ -24,14 +29,14 @@ SDP3xResponse SDP3x::readSensor(float &temperature, float &pressure)
   const uint8_t txData[2] = {0x37, 0x2D};
 
   // Send command
-  Wire.beginTransmission(SDP3x_I2C_ADDRESS);
+  Wire.beginTransmission(I2cAddress);
   Wire.write(txData, sizeof(txData));
   Wire.endTransmission();
 
   // Read first 6 bytes of response: 2 bytes DP, 1 CRC, 2 bytes T, 1 CRC
   const int expectedResponseSize = 6;
   uint8_t readData[expectedResponseSize];
-  Wire.requestFrom(SDP3x_I2C_ADDRESS, expectedResponseSize);
+  Wire.requestFrom(I2cAddress, expectedResponseSize);
   int rxByteCount = 0;
   
   while (Wire.available() && rxByteCount < expectedResponseSize)
@@ -101,8 +106,5 @@ uint16_t SDP3x::convertBytes(uint8_t* data)
 {
   return ((uint16_t)(data)[0]) << 8 | ((data)[1]);
 }
-
-
-SDP3x sdp3x;
 
 

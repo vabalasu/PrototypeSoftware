@@ -6,12 +6,6 @@
 
 // Currently configured for the SDP31 sensor
 
-// SDP3x sensor I2C address
-// The adress can be overwritten by defining SDP3x_I2C_ADDRESS in your sketch directly
-#ifndef SDP3x_I2C_ADDRESS
-#define SDP3x_I2C_ADDRESS 0x21
-#endif
-
 typedef enum {
   SDP_SUCCESS = 0,
   SDP_ERROR_NO_RESPONSE = 1,
@@ -21,8 +15,12 @@ typedef enum {
 
 class SDP3x
 {
+  private:
+  int I2cAddress;
+  
   public:
-     SDP3xResponse readSensor(float &temperature, float &pressure);
+    void setup(int i2cAddress);
+    SDP3xResponse readSensor(float &temperature, float &pressure);
 
   private:
     float convertTemperature(uint16_t ticks);
@@ -30,9 +28,6 @@ class SDP3x
     bool checkCrc(const uint8_t* data, uint8_t size, uint8_t checksum);
     inline uint16_t convertBytes(uint8_t* data); // convert two 8 bit values to one word
 };
-
-extern SDP3x sdp3x;
-
 #endif
 
 
