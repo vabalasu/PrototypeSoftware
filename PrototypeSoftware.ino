@@ -62,7 +62,7 @@ void loop() {
 
   // Perform A/D sampling of battery voltage (~0.1ms)
   float batteryVoltage = analogRead(VBAT_PIN) * 2 * (3.3 / 1024);
-  int batteryPercent = (int)(batteryVoltage / 4.2 + 0.5);
+  int batteryPercent = (int)(batteryVoltage / 4.2 * 100 + 0.5);
   batteryPercent = max(batteryPercent, 0);
   batteryPercent = min(batteryPercent, 100);
   battery.update(batteryPercent);
