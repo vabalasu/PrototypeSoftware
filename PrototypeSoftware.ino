@@ -1,129 +1,69 @@
-//NeoPixel Library
-#include <Adafruit_NeoPixel.h>
-#include "BluefruitConfig.h"
+//Board Support (Feather 32u4 with NR51 BLE)
 #include <Arduino.h>
 #include <SPI.h>
 #include <SoftwareSerial.h>
-
+#include <Wire.h>
 #include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
-//Constants
-#define RING_PIN 6
-#define RING_BRIGHTNESS 20
-#define RING_NUM_LEDS 12
 
-#define POT_PIN 4
-#define POT_MAX_VALUE 1023
+//LedRing Controller, encapsulates a NeoPixel 12-segment LED ring on Pin 6
+//Instantiates external singleton "ledRing"
+#include "LEDRing.h"
 
-Adafruit_NeoPixel rgbRing = Adafruit_NeoPixel(60, RING_PIN, NEO_GRB + NEO_KHZ800);
+//Driver for Sensirion SDP3x Differential Pressure Sensor I2C addon
+//Instantiates external singleton "SDP3x"
+#include "SDP3x.h"
+
+//BLE Configuration
+#include "BluefruitConfig.h"
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
+//Potentiometer Circuit on Pin A4 Configuration
+#define POT_PIN A4
 
-int potValue = 0;
-unsigned int ledStep = 0;
-unsigned int ledsEnabled = 0;
+//Battery Voltage on Pin A9 Configuration
+#define VBAT_PIN A9
+
 void setup() {
-  //Setup LED ring
-  rgbRing.begin();
-  rgbRing.show();
-  rgbRing.setBrightness(RING_BRIGHTNESS);
+  //Setup LED ring for the potentiometer
+  ledRing.setup();
+  ledRing.setInputRange(10.0, 980.0);
+  ledRing.setTargetRange(323.0, 575.0);
 
-  //Calculate LED step
-  ledStep = POT_MAX_VALUE / RING_NUM_LEDS;
+  //Begin I2C communication
+  Wire.begin();
 
+  //Begin BLE communication
   ble.begin();
+
+  //Begin Serial communication (debugging only)
   Serial.begin(9600);
+
 }
 
-bool usingGreen = false;
-bool colorChanged = false;
-unsigned ledsNeedEnable;
-unsigned bled = 0;
 void loop() {
-  potValue = analogRead(POT_PIN);
-  
-  //Calculated the number of pixels that need to be enabled or disabled
-  ledsNeedEnable = (potValue / ledStep);
-  int delta = ledsNeedEnable - ledsEnabled;
-  if(usingGreen)
-  {
-    if(potValue < 600 || potValue > 800)
-    {
-      usingGreen = false;
-      colorChanged = true;
-    }
-    else
-    {
-      colorChanged = false;
-    }
-  }
-  else
-  {
-    if(potValue > 620 && potValue < 780)
-    {
-      usingGreen = true;
-      colorChanged = true;
-    }
-    else
-    {
-      colorChanged = false;
-    }
-  }
-  if(colorChanged)
-  {
-    for(unsigned int i = 0; i < RING_NUM_LEDS; i++)
-    {
-      rgbRing.setPixelColor(i, 0, 0, 0);
-    }
-    for(unsigned int i = 0; i < ledsNeedEnable; i++)
-    {
-       if(usingGreen)
-      {
-      rgbRing.setPixelColor(i, 0, 255, 0);
-      }
-      else
-      {
-        rgbRing.setPixelColor(i, 255, 80, 0);
-      }
-    }
-  }
-  else
-  {
-  if(delta > 0)
-  {
-    for(unsigned int i = ledsEnabled; i < ledsNeedEnable; i++)
-    {
-      if(usingGreen)
-      {
-      rgbRing.setPixelColor(i, 0, 255, 0);
-      }
-      else
-      {
-        rgbRing.setPixelColor(i, 255, 80, 0);
-      }
-    }
-    rgbRing.show();
-  }
-  else if(delta < 0)
-  {
-    for(unsigned int i = ledsEnabled; i > ledsNeedEnable; i--)
-    {
-      rgbRing.setPixelColor(i, 0, 0, 0 );
-    }
-    rgbRing.show();
-  }
-  }
+  // Perform A/D sampling of potentiometer (~0.1ms)
+  int potValue = analogRead(POT_PIN);
 
-  ledsEnabled = ledsNeedEnable;
-  bled++;
-  if (bled > 100) {
-    ble.print("AT+BLEUARTTX=");
-    String snd = String(potValue);
-    snd += "    ";
-    ble.println(snd);
-    bled = 0;
-  }
+  // Perform A/D sampling of battery voltage (~0.1ms)
+  float batteryVoltage = analogRead(VBAT_PIN) * 2 * (3.3 / 1024);
 
+  // Sample pressure sensor (50ms)
+  // Simply print raw value, this can be viewed in the serial plotter
+  float temperature, pressure;
+  sdp3x.readSensor(temperature, pressure);
 
+  ledRing.updateRing(potValue);
+
+  String valuesString =
+    String(batteryVoltage,2)
+    + " " + String(potValue)
+    + " " + String(pressure,2)
+    + " " + String(temperature,2);
+  Serial.println("Battery (V), Potentiometer, Pressure (Pa), Temperature (C): " + valuesString);
+  ble.println("AT+BLEUARTTX=" + valuesString);
+
+  //50ms delay between cycles
+  delay(200);
 }
