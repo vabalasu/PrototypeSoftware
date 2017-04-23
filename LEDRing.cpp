@@ -6,6 +6,7 @@ LedRing::setup(int pin)
 
   ring->begin();
   ring->setBrightness(Brightness);
+  ring->show();
 
   lastValue = 0;
 }
