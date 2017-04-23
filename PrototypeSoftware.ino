@@ -67,8 +67,7 @@ void loop() {
   batteryPercent = min(batteryPercent, 100);
   battery.update(batteryPercent);
 
-  // Sample pressure sensor (50ms)
-  // Simply print raw value, this can be viewed in the serial plotter
+  // Sample pressure sensor (~45ms)
   float temperature, pressure;
   sdp3x.readSensor(temperature, pressure);
 
