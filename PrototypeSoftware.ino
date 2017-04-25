@@ -13,13 +13,15 @@
 #include <Adafruit_BluefruitLE_UART.h>
 
 //LedRing Controller, encapsulates a NeoPixel 12-segment LED ring on Pin 6
-//Instantiates external singleton "ledRing"
-#include "LEDRing.h"
+#include "LEDMapper.h"
+#include <Adafruit_NeoPixel.h>
 #define LEDRING_PIN 6
-LedRing ledRing;
+Adafruit_NeoPixel *ring;
+PotLedMapper potMapper;
+BatteryLedMapper batteryMapper;
+
 
 //Driver for Sensirion SDP3x Differential Pressure Sensor I2C addon
-//Instantiates external singleton "SDP3x"
 #include "SDP3x.h"
 #define SD3Px_I2C_ADDRESS 0x21
 SDP3x sdp3x;
@@ -33,6 +35,9 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 
 //Battery Voltage on Pin A9 Configuration
 #define VBAT_PIN A9
+
+#define BATSTATUS_PIN 13
+
 Adafruit_BLEBattery battery(ble);
 int batteryVoltageToPercent(float voltage)
 {
@@ -47,14 +52,26 @@ int batteryVoltageToPercent(float voltage)
   return batteryPercent;
 }
 
+unsigned long startMillis = 0;
+
 void setup() {
   //Begin Serial communication (debugging only)
   Serial.begin(9600);
 
   //Setup LED ring for the potentiometer
-  ledRing.setup(LEDRING_PIN);
-  ledRing.setInputRange(10.0, 980.0);
-  ledRing.setTargetRange(323.0, 575.0);
+  ring = new Adafruit_NeoPixel(60, LEDRING_PIN, NEO_GRB + NEO_KHZ800);
+  ring->begin();
+  ring->show();
+
+  pinMode(BATSTATUS_PIN, INPUT_PULLUP);
+
+  potMapper.setup(ring);
+  potMapper.setInputRange(10.0, 980.0);
+  potMapper.setTargetRange(323.0, 575.0);
+
+  batteryMapper.setup(ring);
+  batteryMapper.setInputRange(0.0, 100.0);
+  batteryMapper.setTargetRange(25.0, 100.0);  
 
   //Setup SDP3x Sensor
   sdp3x.setup(SD3Px_I2C_ADDRESS);
@@ -66,6 +83,8 @@ void setup() {
   ble.begin();
   battery.begin(true);
   ble.setMode(BLUEFRUIT_MODE_DATA);
+
+  startMillis = millis();
 }
 
 void loop() {
@@ -81,7 +100,14 @@ void loop() {
   float temperature, pressure;
   sdp3x.readSensor(temperature, pressure);
 
-  ledRing.updateRing(potValue);
+  bool showBattery = digitalRead(BATSTATUS_PIN) == LOW;
+  if (showBattery)
+    startMillis = millis();
+    
+  if (millis() - startMillis < 5000)
+    batteryMapper.update(batteryPercent);
+  else  
+    potMapper.update(potValue);
 
   if (Serial)
   {
@@ -100,5 +126,5 @@ void loop() {
   }
 
   //Delay between cycles in ms
-  delay(200);
+  delay(50);
 }
