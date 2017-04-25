@@ -9,9 +9,11 @@ void SDP3x::setup(int i2cAddress)
 
 float SDP3x::convertPressure(uint16_t ticks)
 {
+  // Data is a signed 16-bit integer
+  int16_t signedTicks = (int16_t)ticks;
   // Pressure scale factor for SDP31 is 60 ticks/Pascal
   const float dp_scale = 60.0;
-  return ticks / dp_scale;
+  return signedTicks / dp_scale;
 }
 
 float SDP3x::convertTemperature(uint16_t ticks)
