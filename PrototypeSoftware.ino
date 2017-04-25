@@ -34,6 +34,18 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 //Battery Voltage on Pin A9 Configuration
 #define VBAT_PIN A9
 Adafruit_BLEBattery battery(ble);
+int batteryVoltageToPercent(float voltage)
+{
+  int batteryPercent;
+  
+  const float VMAX = 4.2;
+  const float VMIN = 3.5;
+  batteryPercent = (int)((voltage - VMIN) / (VMAX - VMIN) * 100 + 0.5);
+  batteryPercent = max(batteryPercent, 0);
+  batteryPercent = min(batteryPercent, 100);
+
+  return batteryPercent;
+}
 
 void setup() {
   //Begin Serial communication (debugging only)
@@ -62,9 +74,7 @@ void loop() {
 
   // Perform A/D sampling of battery voltage (~0.1ms)
   float batteryVoltage = analogRead(VBAT_PIN) * 2 * (3.3 / 1024);
-  int batteryPercent = (int)(batteryVoltage / 4.2 * 100 + 0.5);
-  batteryPercent = max(batteryPercent, 0);
-  batteryPercent = min(batteryPercent, 100);
+  int batteryPercent = batteryVoltageToPercent(batteryVoltage);
   battery.update(batteryPercent);
 
   // Sample pressure sensor (~45ms)
@@ -77,8 +87,8 @@ void loop() {
   {
     Serial.println("Battery (V), Potentiometer, Pressure (Pa), Temperature (C): "
     + String(batteryVoltage,2)
-    + "," + String(temperature,2)
     + "," + String(potValue)
+    + "," + String(temperature,2)
     + "," + String(pressure,2));
   }
 
