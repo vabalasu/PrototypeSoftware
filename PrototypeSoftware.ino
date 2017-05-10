@@ -97,7 +97,7 @@ void loop() {
   battery.update(batteryPercent);
 
   // Sample pressure sensor (~45ms)
-  float temperature, pressure;
+  float temperature = 0.0, pressure = 0.0;
   sdp3x.readSensor(temperature, pressure);
 
   bool showBattery = digitalRead(BATSTATUS_PIN) == LOW;
@@ -111,7 +111,7 @@ void loop() {
 
   if (Serial)
   {
-    Serial.println("Battery (V), Potentiometer, Pressure (Pa), Temperature (C): "
+    Serial.println("Battery (V), Potentiometer, Temperature (C), Pressure (Pa): "
     + String(batteryVoltage,2)
     + "," + String(potValue)
     + "," + String(temperature,2)
