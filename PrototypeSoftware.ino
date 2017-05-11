@@ -17,9 +17,8 @@
 #include <Adafruit_NeoPixel.h>
 #define LEDRING_PIN 6
 Adafruit_NeoPixel *ring;
-PotLedMapper potMapper;
+PotLedMapper flowMapper;
 BatteryLedMapper batteryMapper;
-
 
 //Driver for Sensirion SDP3x Differential Pressure Sensor I2C addon
 #include "SDP3x.h"
@@ -52,22 +51,35 @@ int batteryVoltageToPercent(float voltage)
   return batteryPercent;
 }
 
+// Based on a characterization of a specific pneumatic configuration on 11May2017
+// 0 lpm = 0 Pa
+// 2.7 lpm = 257.712 Pa
+// 3.0 lpm = 301.2748 Pa
+// 3.3 lpm = 347.98 Pa
+float pressureToAbsFlow(float pressure)
+{
+  if (pressure < 0)
+    pressure = -pressure;
+    
+  return pressure * pressure * -0.0000108 + pressure * 0.0133;
+}
+
 unsigned long startMillis = 0;
 
 void setup() {
   //Begin Serial communication (debugging only)
   Serial.begin(9600);
 
-  //Setup LED ring for the potentiometer
+  //Setup LED ring for the pressure sensor (converted to flow)
   ring = new Adafruit_NeoPixel(60, LEDRING_PIN, NEO_GRB + NEO_KHZ800);
   ring->begin();
   ring->show();
 
   pinMode(BATSTATUS_PIN, INPUT_PULLUP);
 
-  potMapper.setup(ring);
-  potMapper.setInputRange(10.0, 980.0);
-  potMapper.setTargetRange(323.0, 575.0);
+  flowMapper.setup(ring);
+  flowMapper.setInputRange(2.0, 4.0);
+  flowMapper.setTargetRange(2.7, 3.3);
 
   batteryMapper.setup(ring);
   batteryMapper.setInputRange(0.0, 100.0);
@@ -88,9 +100,6 @@ void setup() {
 }
 
 void loop() {
-  // Perform A/D sampling of potentiometer (~0.1ms)
-  int potValue = analogRead(POT_PIN);
-
   // Perform A/D sampling of battery voltage (~0.1ms)
   float batteryVoltage = analogRead(VBAT_PIN) * 2 * (3.3 / 1024);
   int batteryPercent = batteryVoltageToPercent(batteryVoltage);
@@ -100,6 +109,9 @@ void loop() {
   float temperature = 0.0, pressure = 0.0;
   sdp3x.readSensor(temperature, pressure);
 
+  // Flow conversion
+  float flow = pressureToAbsFlow(pressure);
+
   bool showBattery = digitalRead(BATSTATUS_PIN) == LOW;
   if (showBattery)
     startMillis = millis();
@@ -107,22 +119,22 @@ void loop() {
   if (millis() - startMillis < 5000)
     batteryMapper.update(batteryPercent);
   else  
-    potMapper.update(potValue);
+    flowMapper.update(flow);
 
   if (Serial)
   {
-    Serial.println("Battery (V), Potentiometer, Temperature (C), Pressure (Pa): "
+    Serial.println("Battery (V), Temperature (C), Pressure (Pa), Abs Flow (lpm): "
     + String(batteryVoltage,2)
-    + "," + String(potValue)
     + "," + String(temperature,2)
-    + "," + String(pressure,2));
+    + "," + String(pressure,2)
+    + "," + String(flow,2));
   }
 
   if (ble.isConnected())
   {
     ble.println(String(temperature,2)
-    + "," + String(potValue)
-    + "," + String(pressure,2));
+    + "," + String(pressure,2)
+    + "," + String(flow,2));
   }
 
   //Delay between cycles in ms
