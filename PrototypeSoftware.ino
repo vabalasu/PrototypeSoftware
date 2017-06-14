@@ -13,6 +13,7 @@
 #include <Adafruit_BluefruitLE_UART.h>
 
 #include "util.h"
+#include "Music.h"
 
 //LedRing Controller, encapsulates a NeoPixel 12-segment LED ring on Pin 6
 #include "LEDMapper.h"
@@ -123,8 +124,8 @@ void setup() {
 
   //Buzzer test
   pinMode(BUZZER_PIN, OUTPUT);
-  tone(BUZZER_PIN, 880, 2500);
-  
+  playIntro(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
 void loop() {
