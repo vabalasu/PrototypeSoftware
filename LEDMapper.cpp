@@ -42,9 +42,9 @@ void FlowLedMapper::update(float value)
   for (int i = 0; i < numberOfLeds; i++)
     ring->setPixelColor(i, off);
 
-  ring->setPixelColor(4, leftColor);
-  ring->setPixelColor(6, topColor);
-  ring->setPixelColor(8, rightColor);
+  ring->setPixelColor(1, leftColor);
+  ring->setPixelColor(5, topColor);
+  ring->setPixelColor(9, rightColor);
 
   ring->show();
 }
